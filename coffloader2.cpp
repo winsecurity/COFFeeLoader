@@ -21,6 +21,7 @@ int main()
         return 0;
     }
 
+
     auto filesize = std::filesystem::file_size(filename);
 
     std::vector<char> buffer(filesize, 0);
@@ -31,7 +32,14 @@ int main()
 
 
 
+
+
+// <image url="$(ProjectDir)coffheader.png" scale="1.0"/>
+    
+    
     COFFHeader coffheader = *(PCOFFHeader)(buffer.data());
+
+    std::cout << "size of coffheader: " << std::dec<< sizeof(COFFHeader) << std::endl;
 
     if (coffheader.machine != 0x8664) {
         std::cout << "Not 64bit object file\n";
@@ -41,35 +49,52 @@ int main()
     std::vector<IMAGE_SECTION_HEADER> sectionheaders;
     sectionheaders.reserve(coffheader.numberOfSections);
 
+    
+    
+    std::cout << "size of sectionheader: " << sizeof(IMAGE_SECTION_HEADER) << std::endl;
+
+
+// <image url="$(ProjectDir)sectionheaders.png" scale="1.0"/>
+
+
 
     PIMAGE_SECTION_HEADER sectionheaderptr = (PIMAGE_SECTION_HEADER)((char*)buffer.data() + sizeof(COFFHeader));
     for (int i = 0;i < coffheader.numberOfSections;i++) {
 
+        std::cout << "pointer to raw data: " << sectionheaderptr->PointerToRawData << std::endl;
+        std::cout << "Size of raw data: " << sectionheaderptr->SizeOfRawData << std::endl;
+        std::cout << "Number of relocations: " << sectionheaderptr->NumberOfRelocations << std::endl;
+        std::cout << "Pointer to relocations: " << sectionheaderptr->PointerToRelocations << std::endl;
+        std::cout << "section count: " << i << std::endl;
+        std::cout << "\n";
         sectionheaders.push_back(*sectionheaderptr);
 
-
+        
         sectionheaderptr++;
     }
 
     std::vector<IMAGE_SYMBOL> symboltable;
     symboltable.reserve(coffheader.numberOfSymbols);
-
+    
 
     PIMAGE_SYMBOL symbolptr = (PIMAGE_SYMBOL)((char*)buffer.data() + coffheader.pointerToSymbolTable);
+    std::cout << "Number of symbols: " << coffheader.numberOfSymbols << std::endl;
+    std::cout << "symbol pointer: " << coffheader.pointerToSymbolTable << std::endl;
     PVOID stringptr = ((char*)buffer.data() + coffheader.pointerToSymbolTable +
         (coffheader.numberOfSymbols*sizeof(IMAGE_SYMBOL)));
+    std::cout << "string table pointer: " << coffheader.pointerToSymbolTable +
+        (coffheader.numberOfSymbols * sizeof(IMAGE_SYMBOL)) << std::endl;
 
     for (int i = 0;i < coffheader.numberOfSymbols;i++) {
 
         symboltable.push_back(*symbolptr);
 
-        
 
         symbolptr++;
 
     }
 
-
+    return 1;
 
     // allocating sections
     std::vector<LPVOID> sectionbases;
@@ -97,7 +122,7 @@ int main()
         PIMAGE_RELOCATION relocptr = (PIMAGE_RELOCATION)((char*)buffer.data() + sectionheaders[i].PointerToRelocations);
         for (int j = 0;j < sectionheaders[i].NumberOfRelocations;j++) {
 
-            
+                
             auto symboltableindex = relocptr->SymbolTableIndex;
             auto reloctype = relocptr->Type;
             auto patchaddress = (char*)sectionbases[i] + relocptr->VirtualAddress;
@@ -167,7 +192,8 @@ int main()
                          if (dllhandle) {
                              auto funcaddr = GetProcAddress(dllhandle, funcname.c_str());
                              if (funcaddr) {
-                                 auto base = VirtualAlloc(NULL, 8, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+                                 auto base = VirtualAlloc(NULL, 8, MEM_RESERVE | MEM_COMMIT,
+                                     PAGE_READWRITE);
                                  memcpy(base, &funcaddr, 8);
                                  symboladdress = (ULONGLONG)base;
                                  patchnormaladdress(patchaddress, symboladdress, reloctype, sectionbases[i]);
@@ -184,12 +210,13 @@ int main()
                 
                 
                 if (symboltable[symboltableindex].SectionNumber != 0) {
+                    
                     // offset within section base
 
                     std::cout << "section number: " << symboltable[symboltableindex].SectionNumber << std::endl;
 
                     auto symboladdress = (ULONGLONG)sectionbases[symboltable[symboltableindex].SectionNumber - 1]
-                        + symboltable[symboltableindex].Value;
+                        + symboltable[symboltableindex].Value; 
 
 
 
