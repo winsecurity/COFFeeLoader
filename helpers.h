@@ -11,11 +11,187 @@ __forceinline ULONGLONG getpebaddress() {
 }
 
 
+LPVOID allocatesection(const IMAGE_SECTION_HEADER* sectionheader) {
+	if ((// RWX
+		(sectionheader->Characteristics & IMAGE_SCN_MEM_EXECUTE) == IMAGE_SCN_MEM_EXECUTE) &&
+		((sectionheader->Characteristics & IMAGE_SCN_MEM_WRITE) == IMAGE_SCN_MEM_WRITE) &&
+		((sectionheader->Characteristics & IMAGE_SCN_MEM_READ) == IMAGE_SCN_MEM_READ)
+		) {
+
+		return VirtualAlloc(NULL, sectionheader->SizeOfRawData,
+			MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+
+	}
+
+	else if (// RW
+
+		((sectionheader->Characteristics & IMAGE_SCN_MEM_WRITE) == IMAGE_SCN_MEM_WRITE) &&
+		((sectionheader->Characteristics & IMAGE_SCN_MEM_READ) == IMAGE_SCN_MEM_READ)
+		) {
+	
+		return VirtualAlloc(NULL, sectionheader->SizeOfRawData,
+			MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+
+	}
+	else if (// RX
+
+		((sectionheader->Characteristics & IMAGE_SCN_MEM_EXECUTE) == IMAGE_SCN_MEM_EXECUTE) &&
+		((sectionheader->Characteristics & IMAGE_SCN_MEM_READ) == IMAGE_SCN_MEM_READ)
+		) {
+		
+		return VirtualAlloc(NULL, sectionheader->SizeOfRawData,
+			MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READ);
+
+	}
+
+	else if (// WX
+
+		((sectionheader->Characteristics & IMAGE_SCN_MEM_EXECUTE) == IMAGE_SCN_MEM_EXECUTE) &&
+		((sectionheader->Characteristics & IMAGE_SCN_MEM_WRITE) == IMAGE_SCN_MEM_WRITE)
+		) {
+	
+		return VirtualAlloc(NULL, sectionheader->SizeOfRawData,
+			MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+
+	}
+
+	else if (// R
+
+
+		((sectionheader->Characteristics & IMAGE_SCN_MEM_READ) == IMAGE_SCN_MEM_READ)
+		) {
+		
+		return VirtualAlloc(NULL, sectionheader->SizeOfRawData,
+			MEM_RESERVE | MEM_COMMIT, PAGE_READONLY);
+
+	}
+
+	else if (// W
+
+
+		((sectionheader->Characteristics & IMAGE_SCN_MEM_WRITE) == IMAGE_SCN_MEM_WRITE)
+		) {
+		
+		return VirtualAlloc(NULL, sectionheader->SizeOfRawData,
+			MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+
+	}
+
+	else if (// X
+
+
+		((sectionheader->Characteristics & IMAGE_SCN_MEM_EXECUTE) == IMAGE_SCN_MEM_EXECUTE)
+		) {
+
+		return VirtualAlloc(NULL, sectionheader->SizeOfRawData,
+			MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE);
+
+	}
+
+	else {
+		return VirtualAlloc(NULL, sectionheader->SizeOfRawData,
+			MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+	}
+}
+
+
+VOID modifysectionprotection(const IMAGE_SECTION_HEADER* sectionheader,LPVOID baseaddress, ULONGLONG virtualprotectaddress) {
+
+	DWORD oldprotect = 0;
+	if ((// RWX
+		(sectionheader->Characteristics & IMAGE_SCN_MEM_EXECUTE) == IMAGE_SCN_MEM_EXECUTE) &&
+		((sectionheader->Characteristics & IMAGE_SCN_MEM_WRITE) == IMAGE_SCN_MEM_WRITE) &&
+		((sectionheader->Characteristics & IMAGE_SCN_MEM_READ) == IMAGE_SCN_MEM_READ)
+		) {
+
+		((BOOL(*)(LPVOID, SIZE_T, DWORD, PDWORD))virtualprotectaddress)(baseaddress,
+			sectionheader->SizeOfRawData, PAGE_EXECUTE_READWRITE, &oldprotect);
+
+	}
+
+	else if (// RW
+
+		((sectionheader->Characteristics & IMAGE_SCN_MEM_WRITE) == IMAGE_SCN_MEM_WRITE) &&
+		((sectionheader->Characteristics & IMAGE_SCN_MEM_READ) == IMAGE_SCN_MEM_READ)
+		) {
+		
+		((BOOL(*)(LPVOID, SIZE_T, DWORD, PDWORD))virtualprotectaddress)(baseaddress,
+			sectionheader->SizeOfRawData, PAGE_READWRITE, &oldprotect);
+
+	}
+	else if (// RX
+
+		((sectionheader->Characteristics & IMAGE_SCN_MEM_EXECUTE) == IMAGE_SCN_MEM_EXECUTE) &&
+		((sectionheader->Characteristics & IMAGE_SCN_MEM_READ) == IMAGE_SCN_MEM_READ)
+		) {
+		
+		((BOOL(*)(LPVOID, SIZE_T, DWORD, PDWORD))virtualprotectaddress)(baseaddress,
+			sectionheader->SizeOfRawData, PAGE_EXECUTE_READ, &oldprotect);
+
+
+	}
+
+	else if (// WX
+
+		((sectionheader->Characteristics & IMAGE_SCN_MEM_EXECUTE) == IMAGE_SCN_MEM_EXECUTE) &&
+		((sectionheader->Characteristics & IMAGE_SCN_MEM_WRITE) == IMAGE_SCN_MEM_WRITE)
+		) {
+		
+		((BOOL(*)(LPVOID, SIZE_T, DWORD, PDWORD))virtualprotectaddress)(baseaddress,
+			sectionheader->SizeOfRawData, PAGE_EXECUTE_READWRITE, &oldprotect);
+
+
+	}
+
+	else if (// R
+
+
+		((sectionheader->Characteristics & IMAGE_SCN_MEM_READ) == IMAGE_SCN_MEM_READ)
+		) {
+	
+		((BOOL(*)(LPVOID, SIZE_T, DWORD, PDWORD))virtualprotectaddress)(baseaddress,
+			sectionheader->SizeOfRawData, PAGE_READONLY, &oldprotect);
+
+	}
+
+	else if (// W
+
+
+		((sectionheader->Characteristics & IMAGE_SCN_MEM_WRITE) == IMAGE_SCN_MEM_WRITE)
+		) {
+		
+		((BOOL(*)(LPVOID, SIZE_T, DWORD, PDWORD))virtualprotectaddress)(baseaddress,
+			sectionheader->SizeOfRawData, PAGE_READWRITE, &oldprotect);
+
+
+	}
+
+	else if (// X
+
+
+		((sectionheader->Characteristics & IMAGE_SCN_MEM_EXECUTE) == IMAGE_SCN_MEM_EXECUTE)
+		) {
+		
+		((BOOL(*)(LPVOID, SIZE_T, DWORD, PDWORD))virtualprotectaddress)(baseaddress,
+			sectionheader->SizeOfRawData, PAGE_EXECUTE, &oldprotect);
+
+
+	}
+
+	else {
+		((BOOL(*)(LPVOID, SIZE_T, DWORD, PDWORD))virtualprotectaddress)(baseaddress,
+			sectionheader->SizeOfRawData, PAGE_NOACCESS, &oldprotect);
+	}
+
+
+}
+
 
 void patchnormaladdress(char* patchaddress,ULONGLONG symboladdress ,WORD reloctype, LPVOID sectionbase) {
 	
 	if (reloctype == IMAGE_REL_AMD64_REL32) {
-		*(DWORD*)patchaddress = symboladdress - (ULONGLONG)patchaddress - 4;
+		
+		*(DWORD*)patchaddress =  (INT32) (symboladdress - (ULONGLONG)patchaddress - 4);
 	}
 	else if (reloctype == IMAGE_REL_AMD64_REL32_1) {
 		*(DWORD*)patchaddress = symboladdress - (ULONGLONG)patchaddress - 4 - 1;
@@ -42,6 +218,7 @@ void patchnormaladdress(char* patchaddress,ULONGLONG symboladdress ,WORD relocty
 
 	}
 
+	
 
 }
 
